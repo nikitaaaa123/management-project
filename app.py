@@ -15,7 +15,7 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "task-management-secret-key-2026"
 DB_CONFIG = {
     "host": os.getenv("DB_HOST", "localhost"),
     "user": os.getenv("DB_USER", "root"),
-    "password": os.getenv("DB_PASSWORD", "Nikita#06"),
+    "password": os.getenv("DB_PASSWORD", ""),
     "database": os.getenv("DB_NAME", "task_management_system"),
 }
 
