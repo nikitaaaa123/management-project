@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Task Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="topbar">
+        <div>
+            <h1>Task Management Dashboard</h1>
+            <p>Assign work, monitor progress, and track team efficiency</p>
+        </div>
+        <a class="logout-link" href="{{ url_for('logout') }}">Sign Out</a>
+    </header>
+
+    <main class="dashboard-container">
+        <section class="stats-grid animated-card">
+            <div class="stat-card">
+                <span class="stat-label">Total Assigned</span>
+                <span class="stat-value">{{ total_tasks }}</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Pending Completion</span>
+                <span class="stat-value" style="color: var(--warning);">{{ pending_tasks }}</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Completed Tasks</span>
+                <span class="stat-value" style="color: var(--success);">{{ completed_tasks }}</span>
+            </div>
+        </section>
+
+        {% if message %}
+        <div class="alert alert-success animated-card">
+            <span>{{ message }}</span>
+        </div>
+        {% endif %}
+
+        {% if error %}
+        <div class="alert alert-error animated-card">
+            <span>{{ error }}</span>
+        </div>
+        {% endif %}
+
+        <div class="dashboard-grid">
+            <section class="panel animated-card">
+                <div class="panel-header">
+                    <h2>Assign New Task</h2>
+                    <span>Logged in as <strong>{{ session.username }}</strong> ({{ session.role|title }})</span>
+                </div>
+
+                <form method="POST" class="task-form" id="taskForm">
+                    <div class="form-group">
+                        <label>Task Reference ID</label>
+                        <input type="text" value="# Auto Generated" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="employee_id">Assign To Employee</label>
+                        <select id="employee_id" name="employee_id" required>
+                            <option value="">-- Select Team Member --</option>
+                            {% for employee in employees %}
+                            <option value="{{ employee.id }}">{{ employee.employee_name }} ({{ employee.department }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="task_title">Task Description</label>
+                        <select id="task_title" name="task_title" required>
+                            <option value="">-- Select Task Title --</option>
+                            {% for title in task_titles %}
+                            <option value="{{ title }}">{{ title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="completed">Initial Status</label>
+                        <select id="completed" name="completed" required>
+                            <option value="false">Pending (False)</option>
+                            <option value="true">Completed (True)</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="primary-btn">Assign Task</button>
+                </form>
+            </section>
+
+            <section class="panel animated-card">
+                <div class="panel-header">
+                    <h2>Task Directory</h2>
+                    <span>Live status of all team assignments</span>
+                </div>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Assigned To</th>
+                                <th>Task Title</th>
+                                <th>Status</th>
+                                <th>Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task in tasks %}
+                            <tr>
+                                <td><strong>#{{ task.id }}</strong></td>
+                                <td>
+                                    <span class="emp-name">{{ task.employee_name }}</span>
+                                    <span class="emp-dept">{{ task.department }}</span>
+                                </td>
+                                <td>{{ task.title }}</td>
+                                <td>
+                                    <span class="status-pill {{ 'done' if task.completed else 'pending' }}">
+                                        {{ 'Completed' if task.completed else 'Pending' }}
+                                    </span>
+                                </td>
+                                <td style="color: var(--text-muted); font-size: 13px;">{{ task.created_at }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="empty-state">No tasks have been assigned yet. Use the form to get started!</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

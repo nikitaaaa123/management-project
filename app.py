@@ -1,20 +1,21 @@
 import os
 from flask import Flask, redirect, render_template, request, session, url_for
-import mysql.connector
-from mysql.connector import Error
 from dotenv import load_dotenv
+
+# PyMySQL Setup
+import pymysql
+import pymysql.cursors
+from pymysql import Error
 
 load_dotenv()
 
 app = Flask(__name__)
-# Use environment variable for secret key with a fallback for local dev
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "task-management-secret-key-2026")
 
-# Dynamic DB Config prevents local connectivity crashes
 DB_CONFIG = {
     "host": os.getenv("DB_HOST", "localhost"),
     "user": os.getenv("DB_USER", "root"),
-    "password": os.getenv("DB_PASSWORD", ""),  # Default empty as per README
+    "password": os.getenv("DB_PASSWORD", "Nikita#06"),
     "database": os.getenv("DB_NAME", "task_management_system"),
 }
 
@@ -28,7 +29,11 @@ TASK_TITLES = [
 
 
 def get_connection():
-    return mysql.connector.connect(**DB_CONFIG)
+    # PyMySQL connection using DictCursor automatically
+    return pymysql.connect(
+        **DB_CONFIG, 
+        cursorclass=pymysql.cursors.DictCursor
+    )
 
 
 def is_logged_in():
@@ -50,7 +55,7 @@ def login():
         cursor = None
         try:
             conn = get_connection()
-            cursor = conn.cursor(dictionary=True)
+            cursor = conn.cursor()  # Fixed: No (dictionary=True) needed for PyMySQL
             cursor.execute(
                 """
                 SELECT id, username, role
@@ -73,7 +78,8 @@ def login():
         finally:
             if cursor:
                 cursor.close()
-            if conn and conn.is_connected():
+            # Fixed: PyMySQL uses .open instead of .is_connected()
+            if conn and conn.open:
                 conn.close()
 
     return render_template("login.html", error=error)
@@ -93,14 +99,13 @@ def task_management():
 
     try:
         conn = get_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor()  # Fixed: Clean PyMySQL cursor
 
         if request.method == "POST":
             employee_id = request.form.get("employee_id", "").strip()
             title = request.form.get("task_title", "").strip()
             completed_raw = request.form.get("completed", "").strip()
 
-            # Backend Validation to prevent MySQL constraint crashes
             if not employee_id or not title or completed_raw not in ("true", "false"):
                 error = "All form fields are required and must be valid."
             else:
@@ -115,7 +120,6 @@ def task_management():
                 conn.commit()
                 message = "Task successfully assigned!"
 
-        # Fetch employees
         cursor.execute(
             """
             SELECT id, employee_name, department
@@ -125,7 +129,6 @@ def task_management():
         )
         employees = cursor.fetchall()
 
-        # Fetch tasks
         cursor.execute(
             """
             SELECT
@@ -147,10 +150,10 @@ def task_management():
     finally:
         if cursor:
             cursor.close()
-        if conn and conn.is_connected():
+        # Fixed: PyMySQL uses .open instead of .is_connected()
+        if conn and conn.open:
             conn.close()
 
-    # Calculate dashboard metrics
     total_tasks = len(tasks)
     completed_tasks = sum(1 for t in tasks if t["completed"])
     pending_tasks = total_tasks - completed_tasks
@@ -178,6 +181,6 @@ if __name__ == "__main__":
     app.run(
         host="127.0.0.1",
         port=5000,
-        debug=True,  # Set True for development ease
+        debug=True,
         use_reloader=True,
     )
